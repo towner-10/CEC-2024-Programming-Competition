@@ -63,17 +63,25 @@ function App() {
 			if (!newCells[cell.y]) newCells[cell.y] = [];
 			newCells[cell.y][cell.x] = {
 				...cell,
-				value: Math.random(),
+				value: 1.0,
 			};
 		});
 
 		setCells(newCells);
-	}, [day, mapData]);
+
+		if (focusedCell) {
+			const newFocusedCell = newCells[focusedCell.y][focusedCell.x];
+			setFocusedCell(newFocusedCell);
+		}
+	}, [day, mapData, focusedCell]);
 
 	return (
 		<ThemeProvider>
 			<header className="flex flex-row justify-between items-center border-b p-4 h-14">
-				<h1>CEC 2024</h1>
+				<h1>
+					FIN<span className="font-normal">Point</span>{' '}
+					<span className="font-extralight">by WANBIS Corp.</span>
+				</h1>
 				<ThemeToggle />
 			</header>
 			<main className="flex flex-row gap-4 m-4">
@@ -95,9 +103,12 @@ function App() {
 					<div className="flex flex-col gap-4 w-full">
 						<Select>
 							<SelectTrigger>
-								<SelectValue placeholder="View mode" />
+								<SelectValue placeholder="Select resource view" />
 							</SelectTrigger>
 							<SelectContent>
+								<SelectGroup>
+									<SelectItem value="none">None</SelectItem>
+								</SelectGroup>
 								<SelectGroup>
 									<SelectLabel>Obtain</SelectLabel>
 									<SelectItem value="oil">Oil</SelectItem>
