@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
-type ItemType = 'water' | 'land' | '';
+type ItemType = 'water' | 'land';
 
 export type GridCell = {
 	x: number;
@@ -20,12 +20,15 @@ export type GridCell = {
 	};
 };
 
+/**
+ * Component to display a grid map with cells using a canvas element.
+ */
 export function GridMap(props: {
 	width: number;
 	height: number;
 	focusedCell: GridCell | null;
 	onCellFocus: (cell: GridCell | null) => void;
-
+	path?: Array<{ x: number; y: number }>;
 	cells: GridCell[][];
 	enableOpacity?: boolean;
 	className?: string;
@@ -36,6 +39,44 @@ export function GridMap(props: {
 		[props.width, props.height, props.cells.length],
 	);
 
+	const drawPath = useCallback(
+		(ctx: CanvasRenderingContext2D, path: Array<{ x: number; y: number }>) => {
+			ctx.strokeStyle = 'red';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			path.forEach((cell, index) => {
+				if (index === 0) {
+					ctx.moveTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
+				} else {
+					ctx.lineTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
+				}
+			});
+			ctx.stroke();
+		},
+		[cellSize],
+	);
+
+	const fillCell = useCallback(
+		(x: number, y: number, cell: GridCell, ctx: CanvasRenderingContext2D) => {
+			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
+			if (props.enableOpacity) ctx.globalAlpha = cell.value;
+			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
+			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+			drawPath(ctx, props.path || []);
+		},
+		[cellSize, props.enableOpacity, props.path, drawPath],
+	);
+
+	const highlightCell = useCallback(
+		(x: number, y: number, ctx: CanvasRenderingContext2D) => {
+			ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+			drawPath(ctx, props.path || []);
+		},
+		[cellSize, props.path, drawPath],
+	);
+
+	// Initialize the canvas
 	useEffect(() => {
 		if (!canvas.current) return;
 
@@ -48,21 +89,30 @@ export function GridMap(props: {
 
 		if (!props.enableOpacity) ctx.globalAlpha = 1;
 
-		const fillCell = (x: number, y: number, cell: GridCell) => {
-			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
-			if (props.enableOpacity) ctx.globalAlpha = cell.value;
-			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
-			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-		};
-
 		// Draw the cells
 		props.cells.forEach((row, rowIndex) => {
 			row.forEach((cell, cellIndex) => {
-				fillCell(cellIndex, rowIndex, cell);
+				fillCell(cellIndex, rowIndex, cell, ctx);
 			});
 		});
-	}, [cellSize, props.cells, props.enableOpacity]);
 
+		// Draw the path
+		if (props.path) {
+			ctx.strokeStyle = 'red';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			props.path.forEach((cell, index) => {
+				if (index === 0) {
+					ctx.moveTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
+				} else {
+					ctx.lineTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
+				}
+			});
+			ctx.stroke();
+		}
+	}, [cellSize, fillCell, props.cells, props.enableOpacity, props.path]);
+
+	// Add event listeners to the canvas
 	useEffect(() => {
 		if (!canvas.current) return;
 
@@ -72,18 +122,6 @@ export function GridMap(props: {
 		const ctx = canvas.current.getContext('2d');
 
 		if (!ctx) return;
-
-		const fillCell = (x: number, y: number, cell: GridCell) => {
-			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
-			if (props.enableOpacity) ctx.globalAlpha = cell.value;
-			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
-			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-		};
-
-		const highlightCell = (x: number, y: number) => {
-			ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-		};
 
 		let highlightedCell: GridCell | null = null;
 
@@ -98,18 +136,18 @@ export function GridMap(props: {
 
 			// If there is a focused cell, fill it with the original color
 			if (highlightedCell) {
-				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x]);
+				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x], ctx);
 			}
 
 			// Store the new focused cell and highlight it
 			highlightedCell = props.cells[cellY][cellX];
-			if (highlightedCell) highlightCell(highlightedCell.x, highlightedCell.y);
+			if (highlightedCell) highlightCell(highlightedCell.x, highlightedCell.y, ctx);
 		};
 
 		// On mouse leave, remove the highlight
 		currentCanvas.onmouseleave = () => {
 			if (highlightedCell) {
-				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x]);
+				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x], ctx);
 				highlightedCell = null;
 			}
 		};
@@ -120,7 +158,7 @@ export function GridMap(props: {
 
 			// If there is a focused cell, fill it with the original color
 			if (highlightedCell) {
-				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x]);
+				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x], ctx);
 			}
 		};
 
@@ -129,7 +167,8 @@ export function GridMap(props: {
 			currentCanvas.onmouseleave = null;
 			currentCanvas.onclick = null;
 		};
-	}, [cellSize, props]);
+	}, [cellSize, fillCell, highlightCell, props]);
 
+	// Return the canvas
 	return <canvas ref={canvas} className={props.className} width={props.width} height={props.height} />;
 }
