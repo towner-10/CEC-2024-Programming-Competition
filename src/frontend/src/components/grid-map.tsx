@@ -2,15 +2,22 @@ import { useEffect, useMemo, useRef } from 'react';
 
 type ItemType = 'water' | 'land' | '';
 
-export type Cell = {
-	type: ItemType;
-	value: number;
-};
-
 export type GridCell = {
 	x: number;
 	y: number;
-	cell: Cell;
+	value: number;
+	type: ItemType;
+	resources: {
+		oil: number | null;
+		metal: number | null;
+		helium: number | null;
+		ship: number | null;
+		coral: number | null;
+		species: number | null;
+		temperature: number | null;
+		algal: number | null;
+		wind: number | null;
+	};
 };
 
 export function GridMap(props: {
@@ -18,7 +25,8 @@ export function GridMap(props: {
 	height: number;
 	focusedCell: GridCell | null;
 	onCellFocus: (cell: GridCell | null) => void;
-	cells: Cell[][];
+
+	cells: GridCell[][];
 	enableOpacity?: boolean;
 	className?: string;
 }) {
@@ -40,7 +48,7 @@ export function GridMap(props: {
 
 		if (!props.enableOpacity) ctx.globalAlpha = 1;
 
-		const fillCell = (x: number, y: number, cell: Cell) => {
+		const fillCell = (x: number, y: number, cell: GridCell) => {
 			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
 			if (props.enableOpacity) ctx.globalAlpha = cell.value;
 			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
@@ -65,7 +73,7 @@ export function GridMap(props: {
 
 		if (!ctx) return;
 
-		const fillCell = (x: number, y: number, cell: Cell) => {
+		const fillCell = (x: number, y: number, cell: GridCell) => {
 			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
 			if (props.enableOpacity) ctx.globalAlpha = cell.value;
 			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
@@ -94,8 +102,8 @@ export function GridMap(props: {
 			}
 
 			// Store the new focused cell and highlight it
-			highlightedCell = { x: cellX, y: cellY, cell: props.cells[cellY][cellX] };
-			highlightCell(highlightedCell.x, highlightedCell.y);
+			highlightedCell = props.cells[cellY][cellX];
+			if (highlightedCell) highlightCell(highlightedCell.x, highlightedCell.y);
 		};
 
 		// On mouse leave, remove the highlight

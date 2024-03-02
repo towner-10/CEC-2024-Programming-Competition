@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { GridMap, type Cell, type GridCell } from '@/components/grid-map';
+import { GridMap, type GridCell } from '@/components/grid-map';
 import { DirectionArrow } from '@/components/direction-arrow';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import {
@@ -15,45 +15,60 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { Button } from './components/ui/button';
+import { Skeleton } from './components/ui/skeleton';
 
-// Lazy load the GUI data
-const gui_data = await import('@/assets/gui_data.json');
+type MapData = Array<{
+	day: number;
+	cells: Array<GridCell>;
+}>;
+
+// Simple function to write numbers with commas
+// https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
+function numberWithCommas(x: number | null) {
+	if (x === null) return 'N/A';
+	return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
 
 function App() {
+	const [mapData, setMapData] = useState<MapData | null>(null);
 	const [day, setDay] = useState(1);
 	const [focusedCell, setFocusedCell] = useState<GridCell | null>(null);
-	const [cells, setCells] = useState<Array<Array<Cell>>>([]);
+	const [cells, setCells] = useState<Array<Array<GridCell>>>([]);
 
 	const handleDayChange = (newDay: number) => {
 		if (newDay < 1 || newDay > 30) return;
 		setDay(newDay);
 	};
 
+	// Dynamically import the map data from the JSON file
 	useEffect(() => {
-		const dayData = (
-			gui_data.default as Array<{
-				day: number;
-				cells: Array<{
-					x: number;
-					y: number;
-					type: 'water' | 'land';
-				}>;
-			}>
-		).find((data) => data.day === day);
+		const importMapData = async () => {
+			const gui_data = import('@/assets/gui_data.json');
+			setMapData((await gui_data).default as MapData);
+		};
+
+		importMapData();
+	}, []);
+
+	// Update the cells when the day changes
+	useEffect(() => {
+		if (!mapData) return;
+
+		const dayData = mapData.find((data) => data.day === day);
 		if (!dayData) return;
 
-		const newCells: Array<Array<Cell>> = [];
+		const newCells: Array<Array<GridCell>> = [];
 
 		dayData.cells.forEach((cell) => {
 			if (!newCells[cell.y]) newCells[cell.y] = [];
 			newCells[cell.y][cell.x] = {
-				type: cell.type,
+				...cell,
 				value: Math.random(),
 			};
 		});
 
 		setCells(newCells);
-	}, [day]);
+	}, [day, mapData]);
 
 	return (
 		<ThemeProvider>
@@ -62,15 +77,20 @@ function App() {
 				<ThemeToggle />
 			</header>
 			<main className="flex flex-row gap-4 m-4">
-				<GridMap
-					width={700}
-					height={700}
-					cells={cells}
-					focusedCell={focusedCell}
-					onCellFocus={(cell) => {
-						setFocusedCell(cell);
-					}}
-				/>
+				{cells.length === 0 ? (
+					<Skeleton className="h-[700px] w-[700px]" />
+				) : (
+					<GridMap
+						width={700}
+						height={700}
+						cells={cells}
+						className="rounded-md"
+						focusedCell={focusedCell}
+						onCellFocus={(cell) => {
+							setFocusedCell(cell);
+						}}
+					/>
+				)}
 				<div className="flex flex-col flex-grow justify-between items-center">
 					<div className="flex flex-col gap-4 w-full">
 						<Select>
@@ -102,9 +122,26 @@ function App() {
 							</CardHeader>
 							<CardContent>
 								{focusedCell ? (
-									<p>
-										Cell at {focusedCell.x}, {focusedCell.y}
-									</p>
+									<div className="flex flex-col space-y-4">
+										<p>
+											Cell at {focusedCell.x}, {focusedCell.y}
+										</p>
+										<h2>Resources:</h2>
+										<ul>
+											<li>Oil: {numberWithCommas(focusedCell.resources.oil)} / 10,000</li>
+											<li>Metal: {numberWithCommas(focusedCell.resources.metal)} / 10,000</li>
+											<li>Helium: {numberWithCommas(focusedCell.resources.helium)} / 10,000</li>
+											<li>Ship: {numberWithCommas(focusedCell.resources.ship)} / 10,000</li>
+											<li>Coral: {numberWithCommas(focusedCell.resources.coral)} / 10,000</li>
+											<li>Species: {numberWithCommas(focusedCell.resources.species)} / 10,000</li>
+											<li>
+												Temperature: {numberWithCommas(focusedCell.resources.temperature)} /
+												10,000
+											</li>
+											<li>Algal: {numberWithCommas(focusedCell.resources.algal)} / 10,000</li>
+											<li>Wind: {numberWithCommas(focusedCell.resources.wind)} / 10,000</li>
+										</ul>
+									</div>
 								) : (
 									<p className="text-muted-foreground">No cell selected...</p>
 								)}
