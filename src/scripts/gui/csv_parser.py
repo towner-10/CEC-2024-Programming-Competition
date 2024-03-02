@@ -41,10 +41,15 @@ def get_cell_data(day: int):
     cells = cell_df.to_dict('records')
     return cells
 
-def rank_apply(x):
-    if not pd.isnull(x):
-        return int(x)
-    return None
+# Remove the decimal from the ranks
+def get_percentage(value: float, min_value: float, max_value: float, debug: bool = False):
+    if debug == True:
+        print(f'min: {min_value}, max: {max_value}, value: {value}')
+
+    if pd.isnull(value):
+        return None
+    
+    return (value - min_value) / (max_value - min_value)
 
 # Function to get resource data for a specific day
 def get_resource_data(name: str, day: int):
@@ -54,8 +59,10 @@ def get_resource_data(name: str, day: int):
     # Create a new DataFrame to store coordinates
     cell_df = raw_df[['x', 'y', 'value']].copy()
 
-    # Get the ranking from 1-10000 based on the value of the resource
-    cell_df[f'{name}'] = cell_df['value'].rank(ascending=False,na_option='bottom').apply(rank_apply)
+    # Get the purity percentage for each cell value (convert any scale to 0-1 range)
+    min_value = cell_df['value'].min()
+    max_value = cell_df['value'].max()
+    cell_df[f'{name}'] = cell_df['value'].apply(lambda x: get_percentage(x, min_value, max_value))
 
     return cell_df
 
@@ -64,9 +71,9 @@ for i in range (1, 31):
 
     # Get the data for each coordinate
     cell_data = get_cell_data(i)
-
     cells = []
 
+    # Reformat the cells to remove NaN values from ranks
     for cell in cell_data:
         cells.append({
             'x': cell['x'],
