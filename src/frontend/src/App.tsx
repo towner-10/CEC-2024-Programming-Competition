@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GridMap, type GridCell } from '@/components/grid-map';
@@ -30,54 +30,94 @@ function numberWithCommas(x: number | null) {
 }
 
 function App() {
-	const [mapData, setMapData] = useState<MapData | null>(null);
 	const [day, setDay] = useState(1);
+	const [mapData, setMapData] = useState<MapData | null>(null);
+	const [resourceView, setResourceView] = useState<string>('');
 	const [focusedCell, setFocusedCell] = useState<GridCell | null>(null);
 	const [cells, setCells] = useState<Array<Array<GridCell>>>([]);
 
-	const handleDayChange = (newDay: number) => {
-		if (newDay < 1 || newDay > 30) return;
-		setDay(newDay);
-	};
+	const loadCellsByDay = useCallback(
+		(day: number, tempData?: MapData) => {
+			const data = tempData || mapData;
+			if (!data) return;
+
+			const dayData = data.find((data) => data.day === day);
+			if (!dayData) return;
+
+			const newCells: Array<Array<GridCell>> = [];
+
+			dayData.cells.forEach((cell) => {
+				if (!newCells[cell.y]) newCells[cell.y] = [];
+				newCells[cell.y][cell.x] = {
+					...cell,
+					value: 1.0,
+				};
+			});
+
+			setCells(newCells);
+
+			if (focusedCell) {
+				const newFocusedCell = newCells[focusedCell.y][focusedCell.x];
+				setFocusedCell(newFocusedCell);
+			}
+		},
+		[focusedCell, mapData],
+	);
+
+	const handleDayChange = useCallback(
+		(newDay: number) => {
+			if (!mapData) return;
+			if (newDay < 1 || newDay > 30) return;
+			setDay(newDay);
+			loadCellsByDay(newDay);
+		},
+		[loadCellsByDay, mapData],
+	);
 
 	// Dynamically import the map data from the JSON file
 	useEffect(() => {
+		console.log('Importing map data...');
+
 		const importMapData = async () => {
 			const gui_data = import('@/assets/gui_data.json');
-			setMapData((await gui_data).default as MapData);
+			const temp_map_data = (await gui_data).default as MapData;
+			loadCellsByDay(1, temp_map_data);
+
+			// Set the cells
+			setMapData(temp_map_data);
 		};
 
 		importMapData();
+		
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// Update the cells when the day changes
 	useEffect(() => {
-		if (!mapData) return;
+		if (cells.length === 0) return;
+		if (resourceView === '') return;
 
-		const dayData = mapData.find((data) => data.day === day);
-		if (!dayData) return;
+		// Get normalized value for the selected resource view
+		const getResourceValue = (cell: GridCell) => {
+			if (!resourceView) return 1.0;
+			return (cell.resources[resourceView as keyof GridCell['resources']] || 0.0) / 10000;
+		};
 
-		const newCells: Array<Array<GridCell>> = [];
-
-		dayData.cells.forEach((cell) => {
-			if (!newCells[cell.y]) newCells[cell.y] = [];
-			newCells[cell.y][cell.x] = {
-				...cell,
-				value: 1.0,
-			};
+		// Update the cells with the new resource view
+		const newCells = cells.map((row) => {
+			return row.map((cell) => {
+				return {
+					...cell,
+					value: getResourceValue(cell),
+				};
+			});
 		});
 
 		setCells(newCells);
-
-		if (focusedCell) {
-			const newFocusedCell = newCells[focusedCell.y][focusedCell.x];
-			setFocusedCell(newFocusedCell);
-		}
-	}, [day, mapData, focusedCell]);
+	}, [cells, resourceView]);
 
 	return (
 		<ThemeProvider>
-			<div className='mx-8 min-h-screen'>
+			<div className="mx-8 min-h-screen">
 				<header className="flex flex-row justify-between items-center border-b p-4 h-14">
 					<h1>
 						FIN<span className="font-normal">Point</span>{' '}
@@ -102,7 +142,13 @@ function App() {
 					)}
 					<div className="flex flex-col flex-grow justify-between items-center">
 						<div className="flex flex-col gap-4 w-full">
-							<Select>
+							<Select
+								value={resourceView}
+								onValueChange={(value) => {
+									if (value === 'none') setResourceView('');
+									else setResourceView(value);
+								}}
+							>
 								<SelectTrigger>
 									<SelectValue placeholder="Select resource view" />
 								</SelectTrigger>
@@ -113,15 +159,15 @@ function App() {
 									<SelectGroup>
 										<SelectLabel>Obtain</SelectLabel>
 										<SelectItem value="oil">Oil</SelectItem>
-										<SelectItem value="precious-metals">Precious metals</SelectItem>
+										<SelectItem value="metal">Precious metals</SelectItem>
 										<SelectItem value="helium">Helium</SelectItem>
 									</SelectGroup>
 									<SelectSeparator />
 									<SelectGroup>
 										<SelectLabel>Preserve</SelectLabel>
-										<SelectItem value="shipwrecks">Shipwrecks</SelectItem>
-										<SelectItem value="coral-reefs">Coral Reefs</SelectItem>
-										<SelectItem value="endangered-species">Endangered Species</SelectItem>
+										<SelectItem value="ship">Shipwrecks</SelectItem>
+										<SelectItem value="coral">Coral Reefs</SelectItem>
+										<SelectItem value="species">Endangered Species</SelectItem>
 									</SelectGroup>
 								</SelectContent>
 							</Select>
