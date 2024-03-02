@@ -77,115 +77,121 @@ function App() {
 
 	return (
 		<ThemeProvider>
-			<header className="flex flex-row justify-between items-center border-b p-4 h-14">
-				<h1>
-					FIN<span className="font-normal">Point</span>{' '}
-					<span className="font-extralight">by WANBIS Corp.</span>
-				</h1>
-				<ThemeToggle />
-			</header>
-			<main className="flex flex-row gap-4 m-4">
-				{cells.length === 0 ? (
-					<Skeleton className="h-[700px] w-[700px]" />
-				) : (
-					<GridMap
-						width={700}
-						height={700}
-						cells={cells}
-						className="rounded-md"
-						focusedCell={focusedCell}
-						onCellFocus={(cell) => {
-							setFocusedCell(cell);
-						}}
-					/>
-				)}
-				<div className="flex flex-col flex-grow justify-between items-center">
-					<div className="flex flex-col gap-4 w-full">
-						<Select>
-							<SelectTrigger>
-								<SelectValue placeholder="Select resource view" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectItem value="none">None</SelectItem>
-								</SelectGroup>
-								<SelectGroup>
-									<SelectLabel>Obtain</SelectLabel>
-									<SelectItem value="oil">Oil</SelectItem>
-									<SelectItem value="precious-metals">Precious metals</SelectItem>
-									<SelectItem value="helium">Helium</SelectItem>
-								</SelectGroup>
-								<SelectSeparator />
-								<SelectGroup>
-									<SelectLabel>Preserve</SelectLabel>
-									<SelectItem value="shipwrecks">Shipwrecks</SelectItem>
-									<SelectItem value="coral-reefs">Coral Reefs</SelectItem>
-									<SelectItem value="endangered-species">Endangered Species</SelectItem>
-								</SelectGroup>
-							</SelectContent>
-						</Select>
-						<Card>
-							<CardHeader>
-								<CardTitle>Current Cell Info</CardTitle>
-								<CardDescription>
-									Hover over a cell to get its relevant ranking and information.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{focusedCell ? (
-									<div className="flex flex-col space-y-4">
-										<p>
-											Cell at {focusedCell.x}, {focusedCell.y}
-										</p>
-										<h2>Resources:</h2>
-										<ul>
-											<li>Oil: {numberWithCommas(focusedCell.resources.oil)} / 10,000</li>
-											<li>Metal: {numberWithCommas(focusedCell.resources.metal)} / 10,000</li>
-											<li>Helium: {numberWithCommas(focusedCell.resources.helium)} / 10,000</li>
-											<li>Ship: {numberWithCommas(focusedCell.resources.ship)} / 10,000</li>
-											<li>Coral: {numberWithCommas(focusedCell.resources.coral)} / 10,000</li>
-											<li>Species: {numberWithCommas(focusedCell.resources.species)} / 10,000</li>
-											<li>
-												Temperature: {numberWithCommas(focusedCell.resources.temperature)} /
-												10,000
-											</li>
-											<li>Algal: {numberWithCommas(focusedCell.resources.algal)} / 10,000</li>
-											<li>Wind: {numberWithCommas(focusedCell.resources.wind)} / 10,000</li>
-										</ul>
-									</div>
-								) : (
-									<p className="text-muted-foreground">No cell selected...</p>
-								)}
-							</CardContent>
-							<CardFooter className="justify-end">
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={() => {
-										setFocusedCell(null);
-									}}
-								>
-									Clear
-								</Button>
-							</CardFooter>
-						</Card>
-					</div>
+			<div className='mx-8 min-h-screen'>
+				<header className="flex flex-row justify-between items-center border-b p-4 h-14">
+					<h1>
+						FIN<span className="font-normal">Point</span>{' '}
+						<span className="font-extralight">by WANBIS Corp.</span>
+					</h1>
+					<ThemeToggle />
+				</header>
+				<main className="flex flex-row gap-4 m-4">
+					{cells.length === 0 ? (
+						<Skeleton className="h-[700px] w-[700px]" />
+					) : (
+						<GridMap
+							width={700}
+							height={700}
+							cells={cells}
+							className="rounded-md"
+							focusedCell={focusedCell}
+							onCellFocus={(cell) => {
+								setFocusedCell(cell);
+							}}
+						/>
+					)}
+					<div className="flex flex-col flex-grow justify-between items-center">
+						<div className="flex flex-col gap-4 w-full">
+							<Select>
+								<SelectTrigger>
+									<SelectValue placeholder="Select resource view" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectGroup>
+										<SelectItem value="none">None</SelectItem>
+									</SelectGroup>
+									<SelectGroup>
+										<SelectLabel>Obtain</SelectLabel>
+										<SelectItem value="oil">Oil</SelectItem>
+										<SelectItem value="precious-metals">Precious metals</SelectItem>
+										<SelectItem value="helium">Helium</SelectItem>
+									</SelectGroup>
+									<SelectSeparator />
+									<SelectGroup>
+										<SelectLabel>Preserve</SelectLabel>
+										<SelectItem value="shipwrecks">Shipwrecks</SelectItem>
+										<SelectItem value="coral-reefs">Coral Reefs</SelectItem>
+										<SelectItem value="endangered-species">Endangered Species</SelectItem>
+									</SelectGroup>
+								</SelectContent>
+							</Select>
+							<Card>
+								<CardHeader>
+									<CardTitle>Current Cell Info</CardTitle>
+									<CardDescription>
+										Hover over a cell to get its relevant ranking and information.
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									{focusedCell ? (
+										<div className="flex flex-col space-y-4">
+											<p>
+												Cell at {focusedCell.x}, {focusedCell.y}
+											</p>
+											<h2>Resources:</h2>
+											<ul>
+												<li>Oil: {numberWithCommas(focusedCell.resources.oil)} / 10,000</li>
+												<li>Metal: {numberWithCommas(focusedCell.resources.metal)} / 10,000</li>
+												<li>
+													Helium: {numberWithCommas(focusedCell.resources.helium)} / 10,000
+												</li>
+												<li>Ship: {numberWithCommas(focusedCell.resources.ship)} / 10,000</li>
+												<li>Coral: {numberWithCommas(focusedCell.resources.coral)} / 10,000</li>
+												<li>
+													Species: {numberWithCommas(focusedCell.resources.species)} / 10,000
+												</li>
+												<li>
+													Temperature: {numberWithCommas(focusedCell.resources.temperature)} /
+													10,000
+												</li>
+												<li>Algal: {numberWithCommas(focusedCell.resources.algal)} / 10,000</li>
+												<li>Wind: {numberWithCommas(focusedCell.resources.wind)} / 10,000</li>
+											</ul>
+										</div>
+									) : (
+										<p className="text-muted-foreground">No cell selected...</p>
+									)}
+								</CardContent>
+								<CardFooter className="justify-end">
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => {
+											setFocusedCell(null);
+										}}
+									>
+										Clear
+									</Button>
+								</CardFooter>
+							</Card>
+						</div>
 
-					<div className="flex flex-row justify-between items-center w-full max-w-md">
-						<DirectionArrow
-							direction="left"
-							disabled={day === 1}
-							onClick={() => handleDayChange(day - 1)}
-						/>
-						<h2>{`Day ${day}`}</h2>
-						<DirectionArrow
-							direction="right"
-							disabled={day === 30}
-							onClick={() => handleDayChange(day + 1)}
-						/>
+						<div className="flex flex-row justify-between items-center w-full max-w-md">
+							<DirectionArrow
+								direction="left"
+								disabled={day === 1}
+								onClick={() => handleDayChange(day - 1)}
+							/>
+							<h2>{`Day ${day}`}</h2>
+							<DirectionArrow
+								direction="right"
+								disabled={day === 30}
+								onClick={() => handleDayChange(day + 1)}
+							/>
+						</div>
 					</div>
-				</div>
-			</main>
+				</main>
+			</div>
 		</ThemeProvider>
 	);
 }

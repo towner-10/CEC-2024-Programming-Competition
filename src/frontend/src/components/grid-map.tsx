@@ -20,6 +20,9 @@ export type GridCell = {
 	};
 };
 
+/**
+ * Component to display a grid map with cells using a canvas element.
+ */
 export function GridMap(props: {
 	width: number;
 	height: number;
@@ -36,6 +39,7 @@ export function GridMap(props: {
 		[props.width, props.height, props.cells.length],
 	);
 
+	// Initialize the canvas
 	useEffect(() => {
 		if (!canvas.current) return;
 
@@ -48,6 +52,7 @@ export function GridMap(props: {
 
 		if (!props.enableOpacity) ctx.globalAlpha = 1;
 
+		// Fill the cell with the given color and opacity
 		const fillCell = (x: number, y: number, cell: GridCell) => {
 			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
 			if (props.enableOpacity) ctx.globalAlpha = cell.value;
@@ -63,6 +68,7 @@ export function GridMap(props: {
 		});
 	}, [cellSize, props.cells, props.enableOpacity]);
 
+	// Add event listeners to the canvas
 	useEffect(() => {
 		if (!canvas.current) return;
 
@@ -131,5 +137,6 @@ export function GridMap(props: {
 		};
 	}, [cellSize, props]);
 
+	// Return the canvas
 	return <canvas ref={canvas} className={props.className} width={props.width} height={props.height} />;
 }
