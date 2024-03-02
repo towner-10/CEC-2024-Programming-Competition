@@ -1,38 +1,127 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 type ItemType = 'water' | 'land' | '';
 
-type Cell = {
+export type Cell = {
 	type: ItemType;
 	value: number;
 };
 
-export function GridMap(props: { width: number; height: number; cells: Cell[][]; className?: string }) {
-	const canvas = useRef<HTMLCanvasElement>(null);
+export type GridCell = {
+	x: number;
+	y: number;
+	cell: Cell;
+};
 
-	const draw = useCallback(() => {
+export function GridMap(props: {
+	width: number;
+	height: number;
+	focusedCell: GridCell | null;
+	onCellFocus: (cell: GridCell | null) => void;
+	cells: Cell[][];
+	enableOpacity?: boolean;
+	className?: string;
+}) {
+	const canvas = useRef<HTMLCanvasElement>(null);
+	const cellSize = useMemo(
+		() => Math.min(props.width, props.height) / props.cells.length,
+		[props.width, props.height, props.cells.length],
+	);
+
+	useEffect(() => {
 		if (!canvas.current) return;
 
 		const ctx = canvas.current.getContext('2d');
 
 		if (!ctx) return;
 
-		// Scale cellSize based on the canvas size and the number of cells
-		const cellSize = Math.min(props.width, props.height) / props.cells.length;
-
 		ctx.clearRect(0, 0, canvas.current.width, canvas.current.height);
+		ctx.imageSmoothingEnabled = false;
 
+		if (!props.enableOpacity) ctx.globalAlpha = 1;
+
+		const fillCell = (x: number, y: number, cell: Cell) => {
+			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
+			if (props.enableOpacity) ctx.globalAlpha = cell.value;
+			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
+			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+		};
+
+		// Draw the cells
 		props.cells.forEach((row, rowIndex) => {
 			row.forEach((cell, cellIndex) => {
-				ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
-				ctx.fillRect(cellIndex * cellSize, rowIndex * cellSize, cellSize, cellSize);
+				fillCell(cellIndex, rowIndex, cell);
 			});
 		});
-	}, [props.cells, props.width, props.height]);
+	}, [cellSize, props.cells, props.enableOpacity]);
 
 	useEffect(() => {
-		draw();
-	}, [draw]);
+		if (!canvas.current) return;
+
+		// Copy the current canvas
+		const currentCanvas = canvas.current;
+
+		const ctx = canvas.current.getContext('2d');
+
+		if (!ctx) return;
+
+		const fillCell = (x: number, y: number, cell: Cell) => {
+			ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
+			if (props.enableOpacity) ctx.globalAlpha = cell.value;
+			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
+			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+		};
+
+		const highlightCell = (x: number, y: number) => {
+			ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+		};
+
+		let highlightedCell: GridCell | null = null;
+
+		// On mouse move, highlight the cell
+		currentCanvas.onmousemove = (event: MouseEvent) => {
+			const rect = currentCanvas.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+
+			const cellX = Math.floor(x / cellSize);
+			const cellY = Math.floor(y / cellSize);
+
+			// If there is a focused cell, fill it with the original color
+			if (highlightedCell) {
+				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x]);
+			}
+
+			// Store the new focused cell and highlight it
+			highlightedCell = { x: cellX, y: cellY, cell: props.cells[cellY][cellX] };
+			highlightCell(highlightedCell.x, highlightedCell.y);
+		};
+
+		// On mouse leave, remove the highlight
+		currentCanvas.onmouseleave = () => {
+			if (highlightedCell) {
+				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x]);
+				highlightedCell = null;
+			}
+		};
+
+		// On click, set the focused cell
+		currentCanvas.onclick = () => {
+			props.onCellFocus(highlightedCell);
+
+			// If there is a focused cell, fill it with the original color
+			if (highlightedCell) {
+				fillCell(highlightedCell.x, highlightedCell.y, props.cells[highlightedCell.y][highlightedCell.x]);
+			}
+		};
+
+		return () => {
+			currentCanvas.onmousemove = null;
+			currentCanvas.onmouseleave = null;
+			currentCanvas.onclick = null;
+		};
+	}, [cellSize, props]);
 
 	return <canvas ref={canvas} className={props.className} width={props.width} height={props.height} />;
 }
