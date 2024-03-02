@@ -1,35 +1,28 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeToggle } from './components/theme-toggle';
+import { GridMap } from './components/grid-map';
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+	return (
+		<ThemeProvider>
+			<header className="flex flex-row justify-between items-center border-b border-b-primary p-4 h-16">
+				<h1 className="text-2xl font-medium">CEC 2024</h1>
+				<ThemeToggle />
+			</header>
+			<main className='m-4'>
+				<GridMap
+					width={600}
+					height={600}
+					cells={Array.from({ length: 100 }, () =>
+						Array.from({ length: 100 }, () => ({
+							type: Math.random() > 0.5 ? 'water' : 'land',
+							value: Math.random(),
+						})),
+					)}
+				/>
+			</main>
+		</ThemeProvider>
+	);
 }
 
-export default App
+export default App;
