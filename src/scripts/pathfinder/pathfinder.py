@@ -117,11 +117,14 @@ if __name__ == "__main__":
                 elif len(path2) == i:
                     if abs(points[i][j][0] - path2[i-1][0]) <= 5 and abs(points[i][j][1] - path2[i-1][1]) <= 5:
                         path2.append(points[i][j])
-                if j == (len(points[i]) - 1) and len(path2) <= i:
-                    print("dsa")
-                    print(i)
-                    print(len(path2))
-                    path2.append((path2[-1][0]+5, path2[-1][1]-5))
+            if j == (len(points[i]) - 1) and len(path2) <= i:
+                if(i == 0): 
+                    path2.append(points[i][j])
+                    continue
+                print("dsa")
+                print(i)
+                print(len(path2))
+                path2.append((path2[-1][0]+2, path2[-1][1]+1))
 
     print(path1)
     print(len(path1))
