@@ -137,7 +137,7 @@ function App() {
 							focusedCell={focusedCell}
 							paths={{
 								firstPath: pathData.first,
-								secondPath: pathData.second,
+								secondPath: [],
 							}}
 							enableOpacity={resourceView !== ''}
 							onCellFocus={(cell) => {
