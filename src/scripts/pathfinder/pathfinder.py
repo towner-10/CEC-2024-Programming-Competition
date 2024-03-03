@@ -136,7 +136,7 @@ if __name__ == "__main__":
         point = {"x": p[0], "y": p[1]}
         temp1.append(point)
     temp2 = []
-    for p in path1:
+    for p in path2:
         point = {"x": p[0], "y": p[1]}
         temp2.append(point)
     temp = {"first": temp1, "second": temp2}
