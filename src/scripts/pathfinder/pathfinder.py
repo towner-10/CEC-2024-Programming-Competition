@@ -101,7 +101,6 @@ if __name__ == "__main__":
             continue
 
         points[int(row[0])].append((row[1], row[2]))
-
     for i in range(30):
         for j in range(len(points[i])):
             if len(path2) <= i or (abs(path2[i][0] - points[i][j][0]) >= 2 and abs(path2[i][1] - points[i][j][1]) >= 2):
