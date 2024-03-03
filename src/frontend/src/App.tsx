@@ -22,11 +22,9 @@ type MapData = Array<{
 	cells: Array<GridCell>;
 }>;
 
-// Simple function to write numbers with commas
-// https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators
-function numberWithCommas(x: number | null) {
-	if (x === null) return 'N/A';
-	return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function resourceValueToPercentage(value: number | null): string {
+	if (value === null) return 'N/A';
+	return `${(value * 100).toFixed(2)}%`;
 }
 
 function App() {
@@ -37,8 +35,9 @@ function App() {
 	const [cells, setCells] = useState<Array<Array<GridCell>>>([]);
 
 	const loadCellsByDay = useCallback(
-		(day: number, tempData?: MapData) => {
+		(day: number, currentResourceView?: string, tempData?: MapData) => {
 			const data = tempData || mapData;
+			const resource = currentResourceView || resourceView;
 			if (!data) return;
 
 			const dayData = data.find((data) => data.day === day);
@@ -48,9 +47,19 @@ function App() {
 
 			dayData.cells.forEach((cell) => {
 				if (!newCells[cell.y]) newCells[cell.y] = [];
+				let value = 1.0;
+
+				if (resource !== '') {
+					if (cell.resources[resource as keyof GridCell['resources']] === null) {
+						value = 0.0;
+					} else {
+						value = cell.resources[resource as keyof GridCell['resources']] || 0;
+					}
+				}
+
 				newCells[cell.y][cell.x] = {
 					...cell,
-					value: 1.0,
+					value,
 				};
 			});
 
@@ -61,7 +70,7 @@ function App() {
 				setFocusedCell(newFocusedCell);
 			}
 		},
-		[focusedCell, mapData],
+		[focusedCell, mapData, resourceView],
 	);
 
 	const handleDayChange = useCallback(
@@ -81,39 +90,16 @@ function App() {
 		const importMapData = async () => {
 			const gui_data = import('@/assets/gui_data.json');
 			const temp_map_data = (await gui_data).default as MapData;
-			loadCellsByDay(1, temp_map_data);
+			loadCellsByDay(1, resourceView, temp_map_data);
 
 			// Set the cells
 			setMapData(temp_map_data);
 		};
 
 		importMapData();
-		
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
-
-	useEffect(() => {
-		if (cells.length === 0) return;
-		if (resourceView === '') return;
-
-		// Get normalized value for the selected resource view
-		const getResourceValue = (cell: GridCell) => {
-			if (!resourceView) return 1.0;
-			return (cell.resources[resourceView as keyof GridCell['resources']] || 0.0) / 10000;
-		};
-
-		// Update the cells with the new resource view
-		const newCells = cells.map((row) => {
-			return row.map((cell) => {
-				return {
-					...cell,
-					value: getResourceValue(cell),
-				};
-			});
-		});
-
-		setCells(newCells);
-	}, [cells, resourceView]);
 
 	return (
 		<ThemeProvider>
@@ -135,6 +121,7 @@ function App() {
 							cells={cells}
 							className="rounded-md"
 							focusedCell={focusedCell}
+							enableOpacity={resourceView !== ''}
 							onCellFocus={(cell) => {
 								setFocusedCell(cell);
 							}}
@@ -146,7 +133,10 @@ function App() {
 								value={resourceView}
 								onValueChange={(value) => {
 									if (value === 'none') setResourceView('');
-									else setResourceView(value);
+									else {
+										setResourceView(value);
+										loadCellsByDay(day, value);
+									}
 								}}
 							>
 								<SelectTrigger>
@@ -184,24 +174,24 @@ function App() {
 											<p>
 												Cell at {focusedCell.x}, {focusedCell.y}
 											</p>
-											<h2>Resources:</h2>
+											<h2>Resource Purity:</h2>
 											<ul>
-												<li>Oil: {numberWithCommas(focusedCell.resources.oil)} / 10,000</li>
-												<li>Metal: {numberWithCommas(focusedCell.resources.metal)} / 10,000</li>
+												<li>Oil: {resourceValueToPercentage(focusedCell.resources.oil)}</li>
+												<li>Metal: {resourceValueToPercentage(focusedCell.resources.metal)}</li>
 												<li>
-													Helium: {numberWithCommas(focusedCell.resources.helium)} / 10,000
+													Helium: {resourceValueToPercentage(focusedCell.resources.helium)}
 												</li>
-												<li>Ship: {numberWithCommas(focusedCell.resources.ship)} / 10,000</li>
-												<li>Coral: {numberWithCommas(focusedCell.resources.coral)} / 10,000</li>
+												<li>Ship: {resourceValueToPercentage(focusedCell.resources.ship)}</li>
+												<li>Coral: {resourceValueToPercentage(focusedCell.resources.coral)}</li>
 												<li>
-													Species: {numberWithCommas(focusedCell.resources.species)} / 10,000
+													Species: {resourceValueToPercentage(focusedCell.resources.species)}
 												</li>
 												<li>
-													Temperature: {numberWithCommas(focusedCell.resources.temperature)} /
-													10,000
+													Temperature:{' '}
+													{resourceValueToPercentage(focusedCell.resources.temperature)}
 												</li>
-												<li>Algal: {numberWithCommas(focusedCell.resources.algal)} / 10,000</li>
-												<li>Wind: {numberWithCommas(focusedCell.resources.wind)} / 10,000</li>
+												<li>Algal: {resourceValueToPercentage(focusedCell.resources.algal)}</li>
+												<li>Wind: {resourceValueToPercentage(focusedCell.resources.wind)}</li>
 											</ul>
 										</div>
 									) : (
