@@ -5,6 +5,7 @@
 - python >= 3.12.2
 
 ### Packages for node
+Run `npm install` in `src/frontend` to install the required packages.
 
 ### Packages for python 
 - scikit-learn >= 1.3
