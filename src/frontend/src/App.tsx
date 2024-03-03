@@ -33,6 +33,13 @@ function App() {
 	const [resourceView, setResourceView] = useState<string>('');
 	const [focusedCell, setFocusedCell] = useState<GridCell | null>(null);
 	const [cells, setCells] = useState<Array<Array<GridCell>>>([]);
+	const [pathData, setPathData] = useState<{
+		first: Array<{ x: number; y: number }>;
+		second: Array<{ x: number; y: number }>;
+	}>({
+		first: [],
+		second: [],
+	});
 
 	const loadCellsByDay = useCallback(
 		(day: number, currentResourceView?: string, tempData?: MapData) => {
@@ -85,18 +92,25 @@ function App() {
 
 	// Dynamically import the map data from the JSON file
 	useEffect(() => {
-		console.log('Importing map data...');
-
 		const importMapData = async () => {
-			const gui_data = import('@/assets/gui_data.json');
-			const temp_map_data = (await gui_data).default as MapData;
+			console.log('Importing map data...');
+			const gui_data = await import('@/assets/gui_data.json');
+			const temp_map_data = gui_data.default as MapData;
 			loadCellsByDay(1, resourceView, temp_map_data);
 
 			// Set the cells
 			setMapData(temp_map_data);
 		};
 
+		const importPathData = async () => {
+			console.log('Importing path data...');
+			const path_data = await import('@/assets/paths.json');
+			const temp_path_data = path_data.default;
+			setPathData(temp_path_data as typeof pathData);
+		};
+
 		importMapData();
+		importPathData();
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -121,6 +135,10 @@ function App() {
 							cells={cells}
 							className="rounded-md"
 							focusedCell={focusedCell}
+							paths={{
+								firstPath: pathData.first,
+								secondPath: pathData.second,
+							}}
 							enableOpacity={resourceView !== ''}
 							onCellFocus={(cell) => {
 								setFocusedCell(cell);
@@ -174,7 +192,7 @@ function App() {
 											<p>
 												Cell at {focusedCell.x}, {focusedCell.y}
 											</p>
-											<h2>Resource Purity:</h2>
+											<h2>Resource Valuation:</h2>
 											<ul>
 												<li>Oil: {resourceValueToPercentage(focusedCell.resources.oil)}</li>
 												<li>Metal: {resourceValueToPercentage(focusedCell.resources.metal)}</li>

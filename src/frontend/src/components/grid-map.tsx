@@ -28,7 +28,10 @@ export function GridMap(props: {
 	height: number;
 	focusedCell: GridCell | null;
 	onCellFocus: (cell: GridCell | null) => void;
-	path?: Array<{ x: number; y: number }>;
+	paths?: {
+		firstPath?: Array<{ x: number; y: number }>;
+		secondPath?: Array<{ x: number; y: number }>;
+	};
 	cells: GridCell[][];
 	enableOpacity?: boolean;
 	className?: string;
@@ -39,19 +42,22 @@ export function GridMap(props: {
 		[props.width, props.height, props.cells.length],
 	);
 
-	const drawPath = useCallback(
-		(ctx: CanvasRenderingContext2D, path: Array<{ x: number; y: number }>) => {
-			ctx.strokeStyle = 'red';
-			ctx.lineWidth = 2;
-			ctx.beginPath();
-			path.forEach((cell, index) => {
-				if (index === 0) {
-					ctx.moveTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
-				} else {
-					ctx.lineTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
-				}
+	const drawPaths = useCallback(
+		(ctx: CanvasRenderingContext2D, path: Array<Array<{ x: number; y: number }>>) => {
+			// Different colors for the paths
+			const colors = ['red', 'yellow'];
+			path.forEach((p, i) => {
+				ctx.strokeStyle = colors[i];
+				ctx.beginPath();
+				p.forEach((point, index) => {
+					if (index === 0) {
+						ctx.moveTo(point.x * cellSize + cellSize / 2, point.y * cellSize + cellSize / 2);
+					} else {
+						ctx.lineTo(point.x * cellSize + cellSize / 2, point.y * cellSize + cellSize / 2);
+					}
+				});
+				ctx.stroke();
 			});
-			ctx.stroke();
 		},
 		[cellSize],
 	);
@@ -62,18 +68,18 @@ export function GridMap(props: {
 			if (props.enableOpacity) ctx.globalAlpha = cell.value;
 			ctx.fillStyle = cell.type === 'water' ? 'blue' : 'green';
 			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-			drawPath(ctx, props.path || []);
+			drawPaths(ctx, [props.paths?.firstPath || [], props.paths?.secondPath || []]);
 		},
-		[cellSize, props.enableOpacity, props.path, drawPath],
+		[cellSize, props.enableOpacity, props.paths, drawPaths],
 	);
 
 	const highlightCell = useCallback(
 		(x: number, y: number, ctx: CanvasRenderingContext2D) => {
 			ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
 			ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-			drawPath(ctx, props.path || []);
+			drawPaths(ctx, [props.paths?.firstPath || [], props.paths?.secondPath || []]);
 		},
-		[cellSize, props.path, drawPath],
+		[cellSize, props.paths, drawPaths],
 	);
 
 	// Initialize the canvas
@@ -96,21 +102,9 @@ export function GridMap(props: {
 			});
 		});
 
-		// Draw the path
-		if (props.path) {
-			ctx.strokeStyle = 'red';
-			ctx.lineWidth = 2;
-			ctx.beginPath();
-			props.path.forEach((cell, index) => {
-				if (index === 0) {
-					ctx.moveTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
-				} else {
-					ctx.lineTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
-				}
-			});
-			ctx.stroke();
-		}
-	}, [cellSize, fillCell, props.cells, props.enableOpacity, props.path]);
+		// Draw the paths
+		drawPaths(ctx, [props.paths?.firstPath || [], props.paths?.secondPath || []]);
+	}, [cellSize, fillCell, props.cells, props.enableOpacity, props.paths, drawPaths]);
 
 	// Add event listeners to the canvas
 	useEffect(() => {
@@ -141,7 +135,10 @@ export function GridMap(props: {
 
 			// Store the new focused cell and highlight it
 			highlightedCell = props.cells[cellY][cellX];
-			if (highlightedCell) highlightCell(highlightedCell.x, highlightedCell.y, ctx);
+			if (highlightedCell) {
+				highlightCell(highlightedCell.x, highlightedCell.y, ctx);
+				drawPaths(ctx, [props.paths?.firstPath || [], props.paths?.secondPath || []]);
+			}
 		};
 
 		// On mouse leave, remove the highlight
@@ -167,7 +164,7 @@ export function GridMap(props: {
 			currentCanvas.onmouseleave = null;
 			currentCanvas.onclick = null;
 		};
-	}, [cellSize, fillCell, highlightCell, props]);
+	}, [cellSize, fillCell, highlightCell, drawPaths, props]);
 
 	// Return the canvas
 	return <canvas ref={canvas} className={props.className} width={props.width} height={props.height} />;
